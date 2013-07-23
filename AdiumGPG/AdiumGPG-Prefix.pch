@@ -1,0 +1,29 @@
+#define PURPLE_STATIC_PRPL
+
+#include <glib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <gpgme.h>
+#include <string.h>
+#include <locale.h>
+#include <errno.h>
+
+#define g_list_foreach_(x)           \
+    for (GList *list = x,            \
+    *list_next = g_list_next(list);  \
+    list; list = list_next,     \
+    list_next = g_list_next(list))
+
+#ifdef __OBJC__
+
+#import <Cocoa/Cocoa.h>
+#import <Adium/AISharedAdium.h>
+
+//#define MK_NSString(x) [NSString stringWithCString:x encoding:NSASCIIStringEncoding]
+//#define MK_CSTR(x) [(x) cStringUsingEncoding:NSASCIIStringEncoding]
+
+#define MK_NSString(x) [NSString stringWithUTF8String:(x)]
+#define MK_CSTR(x) [(x) UTF8String]
+
+#endif // __OBJC__
