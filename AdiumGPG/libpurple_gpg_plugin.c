@@ -8,6 +8,7 @@
 
 static const char k_error_body[] =
 "[ERROR: This message is encrypted, and you are unable to decrypt it.]";
+static const char k_ns[] = "jabber:x:encrypted";
 
 // AdiumGPG_Plugin.m
 gboolean is_encryption_enabled(const char *from, const char *to, char **fpr);
@@ -114,6 +115,7 @@ void jabber_send_signal_cb(PurpleConnection *pc, xmlnode **packet,
         
         if (cipher_text) {
             xmlnode *x_node = xmlnode_new("x");
+            xmlnode_set_namespace(x_node, k_ns);
             xmlnode_insert_data(x_node, cipher_text, -1);
             xmlnode_insert_child(*packet, x_node);
             free(cipher_text);
