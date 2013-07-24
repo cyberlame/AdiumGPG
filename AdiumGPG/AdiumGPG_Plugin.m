@@ -3,6 +3,7 @@
 #import <Adium/AIContactControllerProtocol.h>
 #import <Adium/AIPreferenceControllerProtocol.h>
 #import <Adium/AIListContact.h>
+#import <Adium/AIMetaContact.h>
 #import <Adium/AIService.h>
 #import <Adium/AIChat.h>
 #import <Adium/AIContentMessage.h>
@@ -139,6 +140,22 @@ void notify_message(const char *from, const char *to, gboolean encrypted) {
 
 BOOL isContactJabber(AIListObject *obj) {
     return [obj.service.serviceCodeUniqueID isEqualToString:JABBER_SERVICE_ID];
+}
+
+AIListContact *getContactObject(AIListObject *contact) {
+    if ([contact isKindOfClass:[AIMetaContact class]]) {
+        AIMetaContact *meta_contact = (AIMetaContact*)contact;
+        if (meta_contact.uniqueContainedObjectsCount != 1) {
+            log_write("*** meta contact has more than one objects\n");
+            return nil;
+        } else {
+            return [meta_contact.uniqueContainedObjects objectAtIndex:0];
+        }
+        
+    } else if ([contact isKindOfClass:[AIListContact class]]) {
+        return (AIListContact*)contact;
+    }
+    return nil;
 }
 
 //------------------------------------------------------------------------------
@@ -314,7 +331,8 @@ BOOL isContactJabber(AIListObject *obj) {
 
 - (void)updateChatToolbarIcon:(AIChat *)chat inWindow:(NSWindow *)window {
     log_write("update chat icon\n");
-    AIListContact *contact = chat.listObject.parentContact;
+    AIListContact *contact = getContactObject(chat.listObject.parentContact);
+    if (!contact) return;
     log_write("contact uid: %s\n", [contact.UID UTF8String]);
 
     NSToolbar *toolbar = [window toolbar];
@@ -393,21 +411,25 @@ BOOL isContactJabber(AIListObject *obj) {
 
 - (void) selectContactKeyChat: (id) sender {
     AIChat *chat = adium.interfaceController.activeChat;
-    AIListContact *contact = chat.listObject.parentContact;
+    AIListContact *contact = getContactObject(chat.listObject.parentContact);
+    if (!contact) return;
     [SelectContactKey show:contact forChat:chat];
 }
 
 - (void) selectContactKey: (id) sender {
     log_write("selectContactKey sender: %s\n", [[sender className] UTF8String]);
-    AIListObject *listObject = adium.menuController.currentContextMenuObject;
-    log_write("UID: %s\n", [listObject.UID UTF8String]);
+    AIListObject *contact = getContactObject(adium.menuController.currentContextMenuObject);
+    if (!contact) return;
+    log_write("UID: %s\n", [contact.UID UTF8String]);
     
-    [SelectContactKey show:listObject forChat:nil];
+    [SelectContactKey show:contact forChat:nil];
 }
 
 - (void) enableGPG: (id) sender {
     AIChat *chat = adium.interfaceController.activeChat;
-    AIListContact *contact = chat.listObject.parentContact;
+    AIListContact *contact = getContactObject(chat.listObject.parentContact);
+    if (!contact) return;
+    
     [contact setPreference:[NSNumber numberWithInteger:1] forKey:@"gpg_status" group:@"GPG"];
     int val = [[contact preferenceForKey:@"gpg_status" group:@"GPG"] intValue];
     log_write("+++ %s, status: %d\n", [contact.UID UTF8String], val);
@@ -418,7 +440,9 @@ BOOL isContactJabber(AIListObject *obj) {
 
 - (void) disableGPG: (id) sender {
     AIChat *chat = adium.interfaceController.activeChat;
-    AIListContact *contact = chat.listObject.parentContact;
+    AIListContact *contact = getContactObject(chat.listObject.parentContact);
+    if (!contact) return;
+
     [contact setPreference:[NSNumber numberWithInteger:0] forKey:@"gpg_status" group:@"GPG"];
 
     [self updateChatToolbarIcon:chat
@@ -438,8 +462,10 @@ BOOL isContactJabber(AIListObject *obj) {
 //    }
 
     if (![[menuItem.menu title] compare:@"gpg_chat_menu"]) {
-        AIListContact *contact = adium.interfaceController.activeChat.listObject.parentContact;
-
+        AIListContact *contact =
+            getContactObject(adium.interfaceController.activeChat.listObject.parentContact);
+        if (!contact) NO;
+        
         if (!isContactJabber(contact))
             return NO;
             
