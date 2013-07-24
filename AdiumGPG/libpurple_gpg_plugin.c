@@ -89,7 +89,7 @@ void jabber_send_signal_cb(PurpleConnection *pc, xmlnode **packet,
     if (!packet || !*packet) return;
     if (!PURPLE_CONNECTION_IS_VALID(pc)) return;
 
-    if (!g_str_equal((*packet)->name, "message")) {
+    if (g_str_equal((*packet)->name, "message")) {
         const char *from = pc->account->username;
         const char *to = xmlnode_get_attrib(*packet, "to");
         
